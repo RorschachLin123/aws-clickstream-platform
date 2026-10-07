@@ -1,0 +1,5 @@
+aws_region          = "us-west-2"
+owner               = "YOUR_GITHUB_USERNAME"
+# New GitHub repos may include immutable owner/repo IDs; inspect OIDC settings.
+github_oidc_subject = "repo:YOUR_OWNER@123456/YOUR_REPO@654321:ref:refs/heads/main"
+# existing_oidc_provider_arn = "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com"

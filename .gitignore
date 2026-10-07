@@ -1,0 +1,18 @@
+# State and local configuration may contain sensitive values.
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+*.tfplan
+*.plan
+*.tfbackend
+!*.tfvars.example
+!*.tfbackend.example
+crash.log
+crash.*.log
+.env
+.env.*
+!.env.example
+.DS_Store
+__pycache__/

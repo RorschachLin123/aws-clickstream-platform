@@ -1,0 +1,85 @@
+name: Terraform CI
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: terraform-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - name: Scan repository history for secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=8.24.2
+          archive="gitleaks_${version}_linux_x64.tar.gz"
+          base="https://github.com/gitleaks/gitleaks/releases/download/v${version}"
+          curl -fsSL "$base/$archive" -o "$RUNNER_TEMP/$archive"
+          curl -fsSL "$base/gitleaks_${version}_checksums.txt" -o "$RUNNER_TEMP/checksums.txt"
+          (cd "$RUNNER_TEMP" && grep "  $archive$" checksums.txt | sha256sum -c -)
+          tar -xzf "$RUNNER_TEMP/$archive" -C "$RUNNER_TEMP" gitleaks
+          "$RUNNER_TEMP/gitleaks" git --redact --no-banner .
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3
+        with:
+          terraform_version: 1.13.5
+      - run: terraform fmt -check -recursive infra
+      - name: Validate both roots without AWS credentials
+        run: |
+          terraform -chdir=infra/bootstrap init -backend=false -input=false -lockfile=readonly
+          terraform -chdir=infra/bootstrap validate
+          terraform -chdir=infra init -backend=false -input=false -lockfile=readonly
+          terraform -chdir=infra validate
+      - name: Test security and cost invariants without AWS
+        run: |
+          terraform -chdir=infra/bootstrap test
+          terraform -chdir=infra test
+  plan:
+    needs: checks
+    # PR tokens do not have a main-branch sub. Never run PR code with AWS credentials.
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      github.event_name != 'pull_request' &&
+      vars.AWS_PLAN_ROLE_ARN != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      TF_VAR_aws_region: ${{ vars.AWS_REGION }}
+      TF_VAR_owner: ${{ github.repository_owner }}
+      TF_VAR_budget_email: ${{ secrets.BUDGET_EMAIL }}
+      TF_VAR_producer_principal_arn: ${{ vars.PRODUCER_PRINCIPAL_ARN }}
+      TF_VAR_enable_stream: ${{ vars.ENABLE_STREAM || 'false' }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3
+        with:
+          terraform_version: 1.13.5
+      - uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
+        with:
+          role-to-assume: ${{ vars.AWS_PLAN_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - run: aws sts get-caller-identity
+      - name: Initialize encrypted state
+        env:
+          STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
+        run: terraform -chdir=infra init -input=false -lockfile=readonly -backend-config="bucket=$STATE_BUCKET" -backend-config="region=$TF_VAR_aws_region"
+      - name: Generate readable plan
+        shell: bash
+        run: |
+          set -euo pipefail
+          terraform -chdir=infra plan -input=false -no-color | tee "$RUNNER_TEMP/plan.txt"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: terraform-plan-${{ github.sha }}
+          path: ${{ runner.temp }}/plan.txt
+          retention-days: 3

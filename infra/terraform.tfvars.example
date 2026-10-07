@@ -1,0 +1,6 @@
+aws_region             = "us-west-2"
+owner                  = "YOUR_GITHUB_USERNAME"
+budget_email           = "you@example.com"
+producer_principal_arn = "arn:aws:iam::123456789012:role/YOUR_LOCAL_OPERATOR_ROLE"
+# Leave false for the first infrastructure check; true creates a billable stream.
+enable_stream = false
