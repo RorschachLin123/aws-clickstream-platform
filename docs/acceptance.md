@@ -14,6 +14,9 @@ Verified locally on 2026-10-07:
 - Git ignore checks cover both states, local tfvars and backend configuration.
 - Make plan/apply/destroy/nuke commands inspected with `make -n`; no cloud commands executed.
 - GitHub Actions dependencies pinned to verified commit SHAs.
+- Actionlint 1.7.7 workflow validation: exit 0 (shellcheck is not installed).
+- Git history secret scan after initial commit: exit 0, no leaks found.
+- 24 source files tracked; no state, local config or provider cache files tracked.
 
 These checks do not prove cloud IAM permissions, action execution, deployment success or service costs.
 
