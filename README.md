@@ -50,6 +50,8 @@ make apply
 make destroy
 ```
 
+Before bootstrap, the reviewed root-managed `ClickstreamOperator` role and `ClickstreamProjectBoundary` policy must exist; set `project_permissions_boundary_arn` in both configurations and GitHub settings. Every Terraform-created IAM role retains this boundary.
+
 Bootstrap uses local state; back up `infra/bootstrap/terraform.tfstate` securely. Never commit it. The demo stack uses encrypted, versioned remote state with S3 native locking. `make destroy` preserves bootstrap resources. A nonempty lake intentionally blocks destroy; `make nuke` explicitly confirms and empties only that lake before destroying the demo stack.
 
 [Deployment runbook](docs/runbook.md) covers GitHub settings, cost controls, teardown and the acceptance sequence.

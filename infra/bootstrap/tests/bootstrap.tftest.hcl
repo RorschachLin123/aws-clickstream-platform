@@ -8,8 +8,9 @@ mock_provider "aws" {
 }
 mock_provider "random" {}
 variables {
-  owner               = "test-owner"
-  github_oidc_subject = "repo:owner@123/repo@456:ref:refs/heads/main"
+  project_permissions_boundary_arn = "arn:aws:iam::123456789012:policy/ClickstreamProjectBoundary"
+  owner                            = "test-owner"
+  github_oidc_subject              = "repo:owner@123/repo@456:ref:refs/heads/main"
 }
 run "exact_trust_and_versioned_state" {
   command = plan
@@ -44,6 +45,10 @@ run "pr_subject_rejected" {
 
 run "create_oidc_when_not_shared" {
   command = plan
+  assert {
+    condition     = aws_iam_role.ci_plan.permissions_boundary == var.project_permissions_boundary_arn
+    error_message = "Every Terraform-created IAM role must retain the project boundary."
+  }
   assert {
     condition     = length(aws_iam_openid_connect_provider.github) == 1
     error_message = "Create the provider when no shared provider was supplied."

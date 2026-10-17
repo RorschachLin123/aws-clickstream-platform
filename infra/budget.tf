@@ -28,7 +28,8 @@ resource "aws_iam_policy" "budget_deny" {
   })
 }
 resource "aws_iam_role" "budgets" {
-  name = "${local.name}-budgets-action"
+  permissions_boundary = var.project_permissions_boundary_arn
+  name                 = "${local.name}-budgets-action"
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{

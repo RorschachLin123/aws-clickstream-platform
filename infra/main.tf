@@ -67,7 +67,8 @@ resource "aws_cloudwatch_log_group" "flink" {
   retention_in_days = 3
 }
 resource "aws_iam_role" "producer" {
-  name = "${local.name}-producer"
+  permissions_boundary = var.project_permissions_boundary_arn
+  name                 = "${local.name}-producer"
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{

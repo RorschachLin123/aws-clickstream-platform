@@ -54,6 +54,7 @@ jobs:
       contents: read
       id-token: write
     env:
+      TF_VAR_project_permissions_boundary_arn: ${{ vars.PROJECT_PERMISSIONS_BOUNDARY_ARN }}
       TF_VAR_aws_region: ${{ vars.AWS_REGION }}
       TF_VAR_owner: ${{ github.repository_owner }}
       TF_VAR_budget_email: ${{ secrets.BUDGET_EMAIL }}

@@ -56,7 +56,8 @@ resource "aws_iam_openid_connect_provider" "github" {
   client_id_list = ["sts.amazonaws.com"]
 }
 resource "aws_iam_role" "ci_plan" {
-  name = "${local.name}-ci-plan"
+  permissions_boundary = var.project_permissions_boundary_arn
+  name                 = "${local.name}-ci-plan"
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{

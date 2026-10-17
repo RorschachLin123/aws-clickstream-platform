@@ -7,12 +7,17 @@ mock_provider "aws" {
   }
 }
 variables {
-  owner                  = "test-owner"
-  budget_email           = "test@example.com"
-  producer_principal_arn = "arn:aws:iam::123456789012:role/operator"
+  project_permissions_boundary_arn = "arn:aws:iam::123456789012:policy/ClickstreamProjectBoundary"
+  owner                            = "test-owner"
+  budget_email                     = "test@example.com"
+  producer_principal_arn           = "arn:aws:iam::123456789012:role/operator"
 }
 run "default_is_not_billable_stream" {
   command = plan
+  assert {
+    condition     = aws_iam_role.producer.permissions_boundary == var.project_permissions_boundary_arn && aws_iam_role.budgets.permissions_boundary == var.project_permissions_boundary_arn
+    error_message = "Every Terraform-created IAM role must retain the project boundary."
+  }
   assert {
     condition     = length(aws_kinesis_stream.events) == 0
     error_message = "Default plans must not create a billable Kinesis stream."

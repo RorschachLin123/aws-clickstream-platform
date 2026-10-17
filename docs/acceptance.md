@@ -35,3 +35,15 @@ These checks do not prove cloud IAM permissions, action execution, deployment su
 ## Evidence to capture
 
 Record UTC timestamp, git revision, commands/exit codes, AWS inventory, CI links and Budget Action status. Redact credentials, session tokens and personal email. Account ID and bucket names may also be redacted before publication. No cloud screenshots, billing evidence or demo video have been created yet.
+
+## 2026-10-16 IAM deployment preparation
+
+Mandatory root-managed boundary added to all three Terraform-created roles. Both validate checks and all 8 mocked tests pass, including boundary assertions. CI accepts PROJECT_PERMISSIONS_BOUNDARY_ARN. Operator trust/permissions/boundary review artifacts were prepared outside Git. Operator role and boundary were subsequently created on 2026-10-16 after explicit user approval; see the next entry. No data-stack resources exist yet.
+
+## 2026-10-16 operator authorization
+
+User explicitly confirmed the IAM grant. Console verifies ClickstreamProjectBoundary exists; ClickstreamOperator has the fixed boundary, ClickstreamDeploySkeleton inline policy, a one-hour session limit, and an exact trust to haolin-dev. Local clickstream profile uses a credential_process bridge from clickstream-login.
+
+GitHub REST API confirms repository RorschachLin123/aws-clickstream-platform, repository ID 1414166401, owner ID 334108539, immutable OIDC subject enabled, and default branch main. Ignored local bootstrap variables use the exact subject prefix plus ref:refs/heads/main.
+
+STS AssumeRole validation remains blocked by an expired local login cache (last updated 2026-10-13 UTC). This is separate from the root console session. No bootstrap/main apply or destroy has been executed.

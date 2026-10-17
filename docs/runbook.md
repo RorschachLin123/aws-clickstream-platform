@@ -8,6 +8,10 @@
 4. `producer_principal_arn` is an existing IAM role, not the STS assumed-role session ARN. This is the only identity trusted by the producer role; the caller also needs permission to assume it. Account deployment permissions must include IAM, S3, Kinesis, Glue, Logs, Budgets and scoped `iam:PassRole` to Budgets. Use your existing operator profile rather than adding a broad deployment role to GitHub.
 5. If the account has GitHub's OIDC provider already, supply `existing_oidc_provider_arn`; AWS will reject a duplicate provider URL.
 
+## Deployment boundary prerequisite
+
+Before bootstrap, create the reviewed `ClickstreamOperator` role and root-managed `ClickstreamProjectBoundary`. Configure `project_permissions_boundary_arn` in both tfvars and GitHub repository variables. Terraform-created CI, producer and Budgets roles must all retain this boundary; the operator cannot edit it or delete role boundaries. Use the operator profile for apply/destroy. Permission generation and final authorization are recorded separately from cloud acceptance.
+
 ## Bootstrap and first apply
 
 ```bash
@@ -25,6 +29,7 @@ Repository variables:
 
 | Variable | Value |
 | --- | --- |
+| PROJECT_PERMISSIONS_BOUNDARY_ARN | Root-managed `ClickstreamProjectBoundary` ARN |
 | AWS_PLAN_ROLE_ARN | Bootstrap `ci_role_arn` output |
 | AWS_REGION | Same region as both tfvars |
 | TF_STATE_BUCKET | Bootstrap `state_bucket` output |

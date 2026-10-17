@@ -49,3 +49,12 @@ variable "producer_principal_arn" {
     error_message = "Provide an existing IAM role ARN (not an account root or user)."
   }
 }
+
+variable "project_permissions_boundary_arn" {
+  description = "Root-managed boundary required on Terraform-created project roles."
+  type        = string
+  validation {
+    condition     = can(regex("^arn:aws:iam::[0-9]{12}:policy/ClickstreamProjectBoundary$", var.project_permissions_boundary_arn))
+    error_message = "Use the root-managed ClickstreamProjectBoundary ARN."
+  }
+}
