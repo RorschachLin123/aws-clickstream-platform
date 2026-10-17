@@ -24,11 +24,11 @@ These checks do not prove cloud IAM permissions, action execution, deployment su
 
 - [x] Correct account/region verified with STS.
 - [x] Bootstrap apply exit 0; private encrypted/versioned state and exact main OIDC trust inspected.
-- [ ] enable_stream=true main apply exit 0; stream/lake/catalog/logs/budget/action exist.
-- [ ] Budget policy and target-role scope inspected; action behavior tested with method documented.
-- [ ] PR checks green; main/manual OIDC identity + read-only plan green.
-- [ ] Secret scan clean and `git ls-files` contains no state or local tfvars.
-- [ ] Main destroy exit 0; cloud inventory confirms demo resources absent; retained bootstrap resources documented.
+- [x] enable_stream=true main apply exit 0; stream/lake/catalog/logs/budget/action exist.
+- [x] Budget policy and target-role scope inspected; action behavior tested with method documented.
+- [x] PR checks green; main/manual OIDC identity + read-only plan green.
+- [x] Secret scan clean and `git ls-files` contains no state or local tfvars.
+- [x] Main destroy exit 0; cloud inventory confirms demo resources absent; retained bootstrap resources documented.
 - [ ] README diagram and reproducible runbook verified by a fresh checkout.
 - [ ] Public v0.0.1 release identifies infrastructure skeleton and its actual limitations.
 
@@ -70,3 +70,14 @@ When scoping glue:DeleteDatabase, AWS requires the catalog/database ARNs and bot
 After the user restored the administrator console session, the two approved policy documents were saved successfully. The boundary now has a second version. A fresh destroy plan proposed exactly one deletion; apply exited 0 and deleted clickstream_dev. Main state contains no resources; Glue GetDatabase returns EntityNotFoundException.
 
 PR #1 checks passed: https://github.com/RorschachLin123/aws-clickstream-platform/pull/1 . The PR plan job is intentionally skipped; AWS OIDC plan is restricted to main. Main workflow real plan and checks previously passed at bfa36ae. Kinesis creation and budget threshold execution remain unverified, so full skeleton release acceptance is still pending.
+
+
+## Successful paid-plan retry and complete teardown — 2026-10-17 UTC
+
+The user confirmed they upgraded the account and explicitly authorized this paid-resource deployment and its teardown. The reviewed enable_stream=true plan added 15 resources and apply exited 0. Kinesis CreateStream no longer returned SubscriptionRequiredException. DescribeStreamSummary confirmed ACTIVE, ON_DEMAND, KMS encryption using alias/aws/kinesis, and 24-hour retention. A post-apply plan with enable_stream=true exited 0 with no changes.
+
+The budget Action was AUTOMATIC/STANDBY, threshold 100%, and referenced only the named producer role and deny-input policy. A 900-second assumed producer session successfully wrote a synthetic record. Manually attaching the exact budget deny policy caused PutRecord to return an explicit AccessDenied after IAM propagation; removing it restored successful writing. This tests the deny policy and recovery. It does not test billing threshold detection, automatic service execution, notification delivery or a hard spending cap. No credentials were written to the repository or logged.
+
+A fresh destroy plan proposed 15 deletions. Apply exited 0 with 15 destroyed. Independent AWS API checks confirmed stream, lake, Glue database, log group, producer role, budget execution role, deny policy and monthly budget absent; main state list was empty. The bootstrap state bucket and bounded CI/operator identities are retained. With the main stack destroyed, its monthly budget/action are also absent; recreate them before the next demo. No persistent streaming compute is left running by this test.
+
+Full data processing remains future work: no Flink application, Iceberg table or Athena end-to-end reconciliation was implemented in this skeleton. Publication and fresh-checkout runbook review remain separate gates.
