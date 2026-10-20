@@ -68,7 +68,7 @@ Bootstrap uses local state; back up `infra/bootstrap/terraform.tfstate` securely
 
 Private encrypted data/state buckets deny insecure transport. State has versioning and no automatic deletion. OIDC trusts the exact repository/main subject and AWS STS audience; new GitHub repositories may include immutable IDs. Secret scanning covers history in CI. Local configuration and state are ignored. Never upload binary plan/state files; readable plan artifacts still contain metadata (including email) and expire after three days.
 
-Lake prefixes `raw/` and `curated/` expire after seven days; logs after three. **Before Iceberg is enabled, replace generic curated expiration with Iceberg-aware snapshot/file maintenance** so active tables are not corrupted. The budget is account-wide and can trigger from other projects; use a dedicated demo account where possible. Billing cost-allocation tags require account-side activation.
+Only `raw/` and `query-results/` expire after seven days; logs after three. Iceberg data and metadata under `iceberg/` have no generic S3 expiration. This short-lived demo purges them only after Flink is stopped; long-lived tables need Iceberg-aware snapshot/orphan maintenance. The budget is account-wide and can trigger from other projects; use a dedicated demo account where possible. Billing cost-allocation tags require account-side activation.
 
 ## Roadmap and release evidence
 

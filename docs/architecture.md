@@ -33,9 +33,9 @@ flowchart LR
   I --> A[Athena reconciliation SQL]
 ```
 
-Connector/Flink/Iceberg versions, checkpoint storage, Flink service role, packaging and Athena workgroup are pending. No actual sink exists in v0.0.1. Validate source replay and checkpoint/sink commit semantics before making an exactly-once claim.
+The v0.1 feature branch implements Java 11/Flink 1.20, Kinesis connector 5.0.0-1.20, Iceberg 1.10.0, checkpoint-aware GlueCatalog/S3FileIO writes, a bounded service role and Athena engine 3. Live acceptance remains pending; see v01-acceptance.md. Validate source replay and checkpoint/sink commit semantics before making an exactly-once claim.
 
-Generic S3 expiration is suitable only for the empty skeleton. At v0.1 remove automatic curated-file expiry and implement Iceberg snapshot expiration/orphan maintenance before writing tables.
+Generic S3 expiration applies only to raw uploads and Athena results. Iceberg files have no S3 expiry. This disposable demo stops Flink before purging the table; a long-lived deployment requires Iceberg-aware snapshot expiration and conservative orphan maintenance.
 
 ## Next: v0.2 and v1.0
 

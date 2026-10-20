@@ -3,7 +3,7 @@
 ## Local evidence
 
 - Fixed 500-journey fixture: 1,030 events, SHA-256 `3b8c43992a0985426ca6ccf86eb56d19a38a7c06851657078ddfddd47c635cbe`.
-- 13 Python unit tests passed and cover deterministic generation, parent funnels, manifest tampering, content reconciliation, pagination and explicit/ambiguous Kinesis failures.
+- 14 Python unit tests passed and cover deterministic generation, parent funnels, manifest tampering, content reconciliation, pagination and explicit/ambiguous Kinesis failures.
 - 3 Java tests passed, including a real local Flink-to-Iceberg commit/read with exact business keys and integer amounts. The shaded Java 11 JAR builds successfully with AWS SDK dependencies aligned to 2.33.0.
 - Both Terraform roots validate. Main 6 and bootstrap 5 mocked tests passed; plans cover opt-in provisioning, mandatory stream, fixed permissions boundary, constrained service trust, autoscaling off, Athena scan cap and Iceberg lifecycle protection.
 

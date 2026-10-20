@@ -27,11 +27,10 @@ AWS_PROFILE=clickstream terraform -chdir=infra plan -out=deployment.tfplan
 # Review exact resources, permissions and expected cost before apply.
 AWS_PROFILE=clickstream terraform -chdir=infra apply deployment.tfplan
 .venv/bin/clickstream --profile clickstream start
-.venv/bin/clickstream --profile clickstream publish --dataset demo-output/run1 --stream clickstream-dev-events --receipt demo-output/run1/publish-receipt.json
-.venv/bin/clickstream --profile clickstream reconcile --dataset demo-output/run1 --workgroup clickstream-dev-demo --out demo-output/run1/athena-verification.json
+.venv/bin/python tools/record_demo.py --profile clickstream --dataset demo-output/run1 --out demo-output/run1/evidence
 ```
 
-Starting or stopping the application may take several minutes. Enforce an external teardown deadline for the live session; do not wait for the monthly budget notification. Defaults: parallelism 1, autoscaling off, one KPU for processing plus service overhead, 30-second checkpoints, three-day logs, Athena engine 3 with an enforced 10 MiB scan cap per query. Reconciliation retries a bounded number of times for checkpoint visibility and records each query ID/scanned bytes; it fails on missing, extra, duplicate or altered rows.
+The recorder invokes publication and reconciliation once, saves the acknowledgement receipt and Athena verification, and attempts a graceful stop in its finally block. It writes demo.cast plus a standalone demo.html player with actual elapsed timestamps. Do not run a second publication for the same run. Starting or stopping the application may take several minutes. Enforce an external teardown deadline for the live session; do not wait for the monthly budget notification. Defaults: parallelism 1, autoscaling off, one KPU for processing plus service overhead, 30-second checkpoints, three-day logs, Athena engine 3 with an enforced 10 MiB scan cap per query. Reconciliation retries a bounded number of times for checkpoint visibility and records each query ID/scanned bytes; it fails on missing, extra, duplicate or altered rows.
 
 The producer's role is write-only. Publication automatically assumes the named project producer role for 900 seconds using credentials held only in memory; the operator handles start/reconcile/cleanup. A local receipt is created before the first send. An interrupted or ambiguous request leaves IN_PROGRESS; investigate with Athena instead of deleting the receipt and replaying. Only explicitly rejected records are retried. Acknowledgement is not proof of table delivery. This baseline append-only sink does not deduplicate a deliberate producer rerun. A fresh run_id is required for a new ingestion into an existing table.
 

@@ -39,6 +39,19 @@ class RuntimeTest(unittest.TestCase):
                 query_rows(client, 'wg', 'clickstream_dev', 'events', 'run', timeout=1)
         client.stop_query_execution.assert_called_once_with(QueryExecutionId='query-1')
 
+    def test_cleanup_refuses_versioned_lake_before_any_deletion(self):
+        aws = Mock(region_name='us-west-2')
+        clients = {name: Mock() for name in ['sts', 'kinesisanalyticsv2', 's3', 'glue']}
+        aws.client.side_effect = lambda name: clients[name]
+        clients['sts'].get_caller_identity.return_value = {'Account': '123456789012'}
+        clients['kinesisanalyticsv2'].describe_application.return_value = {'ApplicationDetail': {'ApplicationStatus': 'READY'}}
+        clients['s3'].get_bucket_versioning.return_value = {'Status': 'Enabled'}
+        bucket = 'clickstream-dev-lake-123456789012-us-west-2'
+        with self.assertRaises(RuntimeError):
+            purge_demo(aws, 'clickstream-dev-pipeline', 'clickstream_dev', bucket, bucket)
+        clients['glue'].delete_table.assert_not_called()
+        clients['s3'].delete_objects.assert_not_called()
+
 
 if __name__ == '__main__':
     unittest.main()
