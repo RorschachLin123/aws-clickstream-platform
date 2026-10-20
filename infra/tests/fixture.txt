@@ -1,0 +1,1 @@
+Offline Terraform test fixture; not an application artifact.

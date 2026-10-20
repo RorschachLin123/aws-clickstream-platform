@@ -2,7 +2,7 @@
 
 A reproducible AWS portfolio project for application distribution and ad attribution events: `impression → click → install → activation/payment`.
 
-**Status:** v0.0.1 infrastructure deployed and destroyed successfully on AWS. Kinesis encrypted-stream creation, producer write/deny/recovery, PR checks and the main-branch OIDC plan are verified. Public release and fresh-checkout runbook review remain pending. There is no running producer, Flink job or Iceberg table yet. See [acceptance](docs/acceptance.md) for evidence, and [PROJECT.md](PROJECT.md) for the full staged scope.
+**Status:** v0.0.1 infrastructure deployed and destroyed successfully on AWS. Kinesis encrypted-stream creation, producer write/deny/recovery, PR checks and the main-branch OIDC plan are verified. Public release and fresh-checkout runbook review remain pending. There is no running producer, Flink job or Iceberg table yet. The v0.1 producer/Flink/Iceberg/Athena implementation is available on its feature branch; live validation is pending. See [v0.1 demo](docs/v01-demo.md), [v0.1 acceptance](docs/v01-acceptance.md), and [skeleton acceptance](docs/acceptance.md) for evidence, and [PROJECT.md](PROJECT.md) for the full staged scope.
 
 ```mermaid
 flowchart LR

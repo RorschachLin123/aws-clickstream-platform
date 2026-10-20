@@ -41,7 +41,8 @@ resource "aws_s3_bucket_policy" "lake" {
 resource "aws_s3_bucket_lifecycle_configuration" "lake" {
   bucket = aws_s3_bucket.lake.id
   dynamic "rule" {
-    for_each = toset(["raw/", "curated/"])
+    # Iceberg owns snapshot/file retention. Never expire its data or metadata with S3 lifecycle.
+    for_each = toset(["raw/", "query-results/"])
     content {
       id     = "expire-${trimsuffix(rule.value, "/")}"
       status = "Enabled"

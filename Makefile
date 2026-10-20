@@ -2,6 +2,15 @@ SHELL := /bin/bash
 TF ?= terraform
 AWS ?= aws
 INFRA := infra
+PYTHON ?= python3
+MVN ?= mvn
+
+.PHONY: app-check app-build
+app-check:
+	PYTHONPATH=src $(PYTHON) -m unittest discover -s tests -v
+	$(MVN) -B -f flink/pom.xml verify
+app-build:
+	$(MVN) -B -f flink/pom.xml package
 
 .PHONY: help fmt check validate bootstrap-init bootstrap-plan bootstrap-apply init plan apply destroy nuke
 help:
