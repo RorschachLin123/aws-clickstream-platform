@@ -120,7 +120,7 @@ resource "aws_kinesisanalyticsv2_application" "pipeline" {
 resource "aws_athena_workgroup" "demo" {
   count         = local.pipeline_count
   name          = "${local.name}-demo"
-  force_destroy = false
+  force_destroy = true
   configuration {
     enforce_workgroup_configuration    = true
     publish_cloudwatch_metrics_enabled = true

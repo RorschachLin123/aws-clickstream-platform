@@ -1,6 +1,6 @@
 # v0.1: reproducible Kinesis → Flink → Iceberg → Athena demo
 
-AWS startup and checkpoints are verified; delivery remains unverified. The last demo stack is destroyed. Read `v01-runtime-incident.md` before another live run: the independent cloud deadline guard is prepared but not deployed. Record completed delivery in `v01-acceptance.md`.
+AWS delivery is verified: the fixed 1,030-event dataset matches every Athena row and business key. See `v01-acceptance.md` for query/snapshot IDs and cleanup status. Read `v01-runtime-incident.md` before running: use the independent cloud deadline, and do not rely on a local timer. The recorded verification recovery did not republish events.
 
 ## Build and prepare
 
@@ -72,3 +72,15 @@ If startup fails, inspect the existing application log stream. If stop times out
 - [Kinesis source](https://docs.aws.amazon.com/managed-flink/latest/java/how-sources.html)
 - [Iceberg streaming writes](https://iceberg.apache.org/docs/1.10.0/flink-writes/)
 - [Athena Iceberg support](https://docs.aws.amazon.com/athena/latest/ug/querying-iceberg.html)
+
+## Resume verification after a failed query
+
+Preserve the original receipt and inspect the current Iceberg snapshot before deciding whether a restart is safe. Never blindly restart an append-only job over already committed data. In this observed run, the snapshot was empty and records were still retained in Kinesis. After fixing only bucket-region metadata access, refresh/review the cloud deadline, start the job, and run:
+
+```bash
+.venv/bin/python tools/record_demo.py --profile clickstream --dataset demo-output/run1 --out demo-output/run1/recovery --reconcile-only --publish-receipt demo-output/run1/evidence/publish-receipt.json
+```
+
+This mode requires an ACKNOWLEDGED receipt matching run ID, SHA-256 and row count, skips publication, records actual query output and still attempts stop in finally. Do not overwrite an earlier recording.
+
+Cleanup prerequisites: the disposable Athena workgroup has recursive deletion enabled for its test query history; keep results locally first. Scheduler DeleteScheduleGroup requires DeleteSchedule on `schedule/EXACT_PROJECT_GROUP/*` even after the schedule is gone. Grant only that delete action within the named project group, never wildcard create/update or access to other groups.

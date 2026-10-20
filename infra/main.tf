@@ -31,11 +31,19 @@ resource "aws_s3_bucket_policy" "lake" {
   bucket = aws_s3_bucket.lake.id
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [{
-      Sid       = "DenyInsecureTransport", Effect = "Deny", Principal = "*", Action = "s3:*"
-      Resource  = [aws_s3_bucket.lake.arn, "${aws_s3_bucket.lake.arn}/*"]
-      Condition = { Bool = { "aws:SecureTransport" = "false" } }
-    }]
+    Statement = [
+      {
+        Sid       = "DenyInsecureTransport", Effect = "Deny", Principal = "*", Action = "s3:*"
+        Resource  = [aws_s3_bucket.lake.arn, "${aws_s3_bucket.lake.arn}/*"]
+        Condition = { Bool = { "aws:SecureTransport" = "false" } }
+      },
+      {
+        Sid       = "OperatorReadsAthenaBucketRegion", Effect = "Allow"
+        Principal = { AWS = var.producer_principal_arn }
+        Action    = "s3:GetBucketLocation"
+        Resource  = aws_s3_bucket.lake.arn
+      }
+    ]
   })
 }
 resource "aws_s3_bucket_lifecycle_configuration" "lake" {

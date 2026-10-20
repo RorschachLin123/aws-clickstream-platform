@@ -17,6 +17,8 @@ def main():
     parser.add_argument('--profile', default='clickstream')
     parser.add_argument('--dataset', type=Path, required=True)
     parser.add_argument('--out', type=Path, required=True)
+    parser.add_argument('--reconcile-only', action='store_true')
+    parser.add_argument('--publish-receipt', type=Path)
     args = parser.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
     cast = args.out / 'demo.cast'
@@ -40,7 +42,17 @@ def main():
         emit('Reproducible synthetic clickstream demo\n')
         emit(json.dumps({k:v for k,v in manifest.items() if k!='expected_rows'}, indent=2)+'\n\n')
         run(['aws','kinesisanalyticsv2','describe-application','--application-name','clickstream-dev-pipeline','--profile',args.profile,'--region','us-west-2','--query','ApplicationDetail.{Status:ApplicationStatus,Runtime:RuntimeEnvironment}','--no-cli-pager'])
-        run(cli + ['publish','--dataset',str(args.dataset),'--stream','clickstream-dev-events','--receipt',str(args.out/'publish-receipt.json')])
+        if args.reconcile_only:
+            if args.publish_receipt is None:
+                raise ValueError('reconcile-only requires the original acknowledgement receipt')
+            receipt = json.loads(args.publish_receipt.read_text())
+            expected = dict(status='ACKNOWLEDGED', run_id=manifest['run_id'], sha256=manifest['sha256'], acknowledged_records=manifest['event_count'])
+            if any(receipt.get(key) != value for key, value in expected.items()):
+                raise ValueError('original receipt does not match this dataset')
+            emit('Original acknowledgement verified; publication skipped.\n')
+            emit(json.dumps(receipt, indent=2)+'\n\n')
+        else:
+            run(cli + ['publish','--dataset',str(args.dataset),'--stream','clickstream-dev-events','--receipt',str(args.out/'publish-receipt.json')])
         run(cli + ['reconcile','--dataset',str(args.dataset),'--workgroup','clickstream-dev-demo','--out',str(args.out/'athena-verification.json')])
     finally:
         try:

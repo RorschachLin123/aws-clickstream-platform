@@ -2,7 +2,7 @@
 
 A reproducible AWS portfolio project for application distribution and ad attribution events: `impression → click → install → activation/payment`.
 
-**Status:** the skeleton apply/destroy, encrypted stream write/deny/recovery and main OIDC plan are verified. The v0.1 application now starts on AWS and completed 72 checkpoints. Producer-to-Athena delivery remains unverified. The demo stack is destroyed and its remote state is empty. A local deadline failed during a host/network interruption; a cloud stop guard is prepared but not deployed. See [v0.1 acceptance](docs/v01-acceptance.md), [runtime incident](docs/v01-runtime-incident.md), [demo runbook](docs/v01-demo.md), and [skeleton evidence](docs/acceptance.md). Public releases remain pending.
+**Status:** the AWS data path is verified: 1,030 manifest rows = 1,030 Athena rows/unique keys, with no missing, duplicate or unexpected rows and all nine fields equal. A data-bearing Iceberg checkpoint is preserved. Compute, stream, lake and workgroup are deleted; one empty Scheduler group awaits administrator cleanup. See [acceptance evidence](docs/v01-acceptance.md), [demo/recovery runbook](docs/v01-demo.md), and [the earlier runtime incident](docs/v01-runtime-incident.md). Public release remains pending.
 
 ```mermaid
 flowchart LR
@@ -13,12 +13,12 @@ flowchart LR
     C[CloudWatch logs · 3 days]
     B[Account budget · alerts + deny producer input]
   end
-  subgraph Pipeline[v0.1 implementation · delivery verification pending]
-    P[Python producer] -.-> K
-    K -.-> F[Managed Apache Flink]
-    F -. Iceberg .-> L
-    L -.-> A[Athena]
-    G -. Catalog .-> F
+  subgraph Pipeline[v0.1 data path · verified 1030 rows]
+    P[Python producer] --> K
+    K --> F[Managed Apache Flink]
+    F -- Iceberg --> L
+    L --> A[Athena]
+    G -- Catalog --> F
   end
   T[Terraform · manual apply] --> Skeleton
   CI[GitHub Actions · main OIDC read-only plan] --> T
