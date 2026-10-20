@@ -1,5 +1,27 @@
 """Bounded application lifecycle and explicitly confirmed demo-data cleanup."""
 import time
+import json
+from datetime import datetime, timezone
+
+
+def verify_deadline(client, application: str, *, now=None):
+    if application != "clickstream-dev-pipeline":
+        raise ValueError("Deadline guard is scoped to the dedicated demo application")
+    schedule = client.get_schedule(Name="clickstream-dev-stop", GroupName="clickstream-dev-demo")
+    target = schedule["Target"]
+    payload = json.loads(target["Input"])
+    expression = schedule["ScheduleExpression"]
+    if (schedule["State"] != "ENABLED" or schedule.get("ScheduleExpressionTimezone") != "UTC"
+            or schedule["FlexibleTimeWindow"]["Mode"] != "OFF"
+            or target["Arn"] != "arn:aws:scheduler:::aws-sdk:kinesisanalyticsv2:stopApplication"
+            or payload != {"ApplicationName": application, "Force": True}
+            or not expression.startswith("at(") or not expression.endswith(")")):
+        raise RuntimeError("Cloud deadline guard does not match the required stop-only target")
+    deadline = datetime.fromisoformat(expression[3:-1]).replace(tzinfo=timezone.utc)
+    remaining = (deadline - (now or datetime.now(timezone.utc))).total_seconds()
+    if not 120 <= remaining <= 900:
+        raise RuntimeError("Refresh the cloud deadline: it must be 2–15 minutes in the future before start")
+    print(f"Verified independent cloud stop deadline: {deadline.isoformat()}", flush=True)
 
 
 def wait_status(client, application: str, desired: str, timeout: int = 900, *, sleep=time.sleep):
@@ -8,6 +30,8 @@ def wait_status(client, application: str, desired: str, timeout: int = 900, *, s
     while True:
         detail = client.describe_application(ApplicationName=application)["ApplicationDetail"]
         status = detail["ApplicationStatus"]
+        if desired == "RUNNING" and status == "READY" and previous not in (None, "READY"):
+            raise RuntimeError(f"{application} returned to READY before RUNNING; inspect startup logs before retrying")
         if status != previous:
             print(f"{application}: {status}", flush=True)
             previous = status

@@ -1,10 +1,37 @@
 import unittest
 from unittest.mock import Mock, patch
-from clickstream.runtime import purge_demo, start, stop
+from clickstream.runtime import purge_demo, start, stop, wait_status
 from clickstream.reconcile import query_rows
+from clickstream.runtime import verify_deadline
+from datetime import datetime, timezone
+import json
 
 
 class RuntimeTest(unittest.TestCase):
+    def test_cloud_deadline_is_required_to_be_enabled_and_near_future(self):
+        client = Mock()
+        schedule = dict(State='ENABLED', ScheduleExpression='at(2026-10-20T03:10:00)',
+            ScheduleExpressionTimezone='UTC', FlexibleTimeWindow={'Mode': 'OFF'},
+            Target={'Arn': 'arn:aws:scheduler:::aws-sdk:kinesisanalyticsv2:stopApplication',
+                    'Input': json.dumps({'ApplicationName': 'clickstream-dev-pipeline', 'Force': True})})
+        client.get_schedule.return_value = schedule
+        now = datetime(2026, 10, 20, 3, 0, tzinfo=timezone.utc)
+        verify_deadline(client, 'clickstream-dev-pipeline', now=now)
+        for mutation in [dict(State='DISABLED'), dict(ScheduleExpression='at(2026-10-20T02:50:00)'),
+                         dict(ScheduleExpression='at(2026-10-20T04:00:00)'),
+                         dict(Target={'Arn': schedule['Target']['Arn'], 'Input': json.dumps({'ApplicationName': 'other', 'Force': True})})]:
+            client.get_schedule.return_value = {**schedule, **mutation}
+            with self.assertRaises(RuntimeError):
+                verify_deadline(client, 'clickstream-dev-pipeline', now=now)
+
+    def test_failed_start_returns_immediately_instead_of_waiting_full_timeout(self):
+        client = Mock()
+        client.describe_application.side_effect = [
+            {'ApplicationDetail': {'ApplicationStatus': status}} for status in ['STARTING', 'READY']
+        ]
+        with self.assertRaisesRegex(RuntimeError, 'returned to READY'):
+            wait_status(client, 'app', 'RUNNING', sleep=lambda _: None)
+
     def test_start_only_from_ready(self):
         client = Mock()
         client.describe_application.return_value = {'ApplicationDetail': {'ApplicationStatus': 'STARTING'}}

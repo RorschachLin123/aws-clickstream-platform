@@ -50,10 +50,12 @@ def main() -> int:
     from botocore.config import Config
     aws = session(args.profile, args.region)
     if args.command in ("start", "stop", "purge-demo"):
-        from .runtime import start, stop, purge_demo
+        from .runtime import start, stop, purge_demo, verify_deadline
         if args.command == "purge-demo":
             purge_demo(aws, args.application, args.database, args.bucket, args.confirm_bucket)
         else:
+            if args.command == "start":
+                verify_deadline(aws.client("scheduler"), args.application)
             operation = start if args.command == "start" else stop
             operation(aws.client("kinesisanalyticsv2"), args.application)
         return 0

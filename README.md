@@ -2,7 +2,7 @@
 
 A reproducible AWS portfolio project for application distribution and ad attribution events: `impression → click → install → activation/payment`.
 
-**Status:** v0.0.1 infrastructure deployed and destroyed successfully on AWS. Kinesis encrypted-stream creation, producer write/deny/recovery, PR checks and the main-branch OIDC plan are verified. Public release and fresh-checkout runbook review remain pending. There is no running producer, Flink job or Iceberg table yet. The v0.1 producer/Flink/Iceberg/Athena implementation is available on its feature branch; live validation is pending. See [v0.1 demo](docs/v01-demo.md), [v0.1 acceptance](docs/v01-acceptance.md), and [skeleton acceptance](docs/acceptance.md) for evidence, and [PROJECT.md](PROJECT.md) for the full staged scope.
+**Status:** the skeleton apply/destroy, encrypted stream write/deny/recovery and main OIDC plan are verified. The v0.1 application now starts on AWS and completed 72 checkpoints. Producer-to-Athena delivery remains unverified. The demo stack is destroyed and its remote state is empty. A local deadline failed during a host/network interruption; a cloud stop guard is prepared but not deployed. See [v0.1 acceptance](docs/v01-acceptance.md), [runtime incident](docs/v01-runtime-incident.md), [demo runbook](docs/v01-demo.md), and [skeleton evidence](docs/acceptance.md). Public releases remain pending.
 
 ```mermaid
 flowchart LR
@@ -13,7 +13,7 @@ flowchart LR
     C[CloudWatch logs · 3 days]
     B[Account budget · alerts + deny producer input]
   end
-  subgraph Planned[v0.1 data path · not implemented]
+  subgraph Pipeline[v0.1 implementation · delivery verification pending]
     P[Python producer] -.-> K
     K -.-> F[Managed Apache Flink]
     F -. Iceberg .-> L
@@ -59,7 +59,7 @@ Bootstrap uses local state; back up `infra/bootstrap/terraform.tfstate` securely
 ## Engineering decisions
 
 - **Kinesis over MSK:** the small, intermittent demo prioritizes managed ingestion without operating a Kafka cluster. Kinesis on-demand still incurs provisioned service costs while idle; enable only for a timed demo. PROJECT.md's hourly comparisons are estimates, not current quotes. Check [Kinesis pricing](https://aws.amazon.com/kinesis/data-streams/pricing/) and [MSK pricing](https://aws.amazon.com/msk/pricing/) for the selected region/mode before deployment.
-- **Iceberg from the first working pipeline:** v0.1 will implement checkpoint-aware Flink writes with Glue catalog and Athena reconciliation. A bare S3 bucket is not an Iceberg table.
+- **Iceberg from the first working pipeline:** v0.1 implements checkpoint-aware Flink writes with Glue catalog and Athena reconciliation. A bare S3 bucket is not an Iceberg table.
 - **Main-only cloud plans:** ordinary PR OIDC tokens carry a `pull_request` subject, whereas the role trusts an exact main-branch subject. PRs run scan/fmt/validate/mock tests offline; push to main or manual dispatch on main generates the cloud plan. No automatic apply.
 - **Read-only CI:** IAM reads are scoped to project resources where supported; the only CI writes are the S3 lock object. Apply/destroy use your local operator identity. CI access must be expanded deliberately for later phases.
 - **Budget Action limits input:** 50/80/100% account-wide actual-cost alerts; at 100% the Budgets role attaches a deny-input policy to the producer role. This is neither a hard dollar cap nor automatic shutdown: bills lag, alternate identities are unaffected, and running services keep charging. Destroy after every session.
