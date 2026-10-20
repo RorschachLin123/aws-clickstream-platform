@@ -59,19 +59,19 @@ run "cloud_deadline_is_stop_only_and_independent" {
     demo_stop_at          = "2026-10-20T03:10:00Z"
   }
   assert {
-    condition = aws_scheduler_schedule.stop[0].schedule_expression == "at(2026-10-20T03:10:00)" && one(aws_scheduler_schedule.stop[0].flexible_time_window).mode == "OFF" && aws_scheduler_schedule.stop[0].state == "ENABLED"
+    condition     = aws_scheduler_schedule.stop[0].schedule_expression == "at(2026-10-20T03:10:00)" && one(aws_scheduler_schedule.stop[0].flexible_time_window).mode == "OFF" && aws_scheduler_schedule.stop[0].state == "ENABLED"
     error_message = "Cloud deadline must be one-shot, enabled, and have no flexible window."
   }
   assert {
-    condition = jsondecode(one(aws_scheduler_schedule.stop[0].target).input) == { ApplicationName = "clickstream-dev-pipeline", Force = true } && one(aws_scheduler_schedule.stop[0].target).arn == "arn:aws:scheduler:::aws-sdk:kinesisanalyticsv2:stopApplication"
+    condition     = jsondecode(one(aws_scheduler_schedule.stop[0].target).input) == { ApplicationName = "clickstream-dev-pipeline", Force = true } && one(aws_scheduler_schedule.stop[0].target).arn == "arn:aws:scheduler:::aws-sdk:kinesisanalyticsv2:stopApplication"
     error_message = "Deadline target must only force-stop the named demo application."
   }
   assert {
-    condition = jsondecode(aws_iam_role_policy.deadline[0].policy).Statement[0].Action == "kinesisanalytics:StopApplication" && jsondecode(aws_iam_role_policy.deadline[0].policy).Statement[0].Resource == "arn:aws:kinesisanalytics:us-west-2:123456789012:application/clickstream-dev-pipeline" && aws_iam_role.deadline[0].permissions_boundary == var.project_permissions_boundary_arn
+    condition     = jsondecode(aws_iam_role_policy.deadline[0].policy).Statement[0].Action == "kinesisanalytics:StopApplication" && jsondecode(aws_iam_role_policy.deadline[0].policy).Statement[0].Resource == "arn:aws:kinesisanalytics:us-west-2:123456789012:application/clickstream-dev-pipeline" && aws_iam_role.deadline[0].permissions_boundary == var.project_permissions_boundary_arn
     error_message = "Deadline role must be bounded and stop-only on the exact app."
   }
   assert {
-    condition = jsondecode(aws_iam_role.deadline[0].assume_role_policy).Statement[0].Condition.StringEquals["aws:SourceArn"] == "arn:aws:scheduler:us-west-2:123456789012:schedule-group/clickstream-dev-demo"
+    condition     = jsondecode(aws_iam_role.deadline[0].assume_role_policy).Statement[0].Condition.StringEquals["aws:SourceArn"] == "arn:aws:scheduler:us-west-2:123456789012:schedule-group/clickstream-dev-demo"
     error_message = "Scheduler trust must use the exact schedule group ARN."
   }
 }
