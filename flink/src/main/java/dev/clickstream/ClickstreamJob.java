@@ -117,11 +117,15 @@ public final class ClickstreamJob {
             .setStreamArn(required(config, "stream_arn"))
             .setSourceConfig(sourceConfig)
             .setDeserializationSchema(new SimpleStringSchema()).build();
-        DataStream<Row> rows = env.fromSource(source, WatermarkStrategy.noWatermarks(), "kinesis-events").uid("kinesis-events-v1")
+        DataStream<Row> rows = sourceRows(env, source);
+        attachSink(rows, tableLoader);
+        env.execute("clickstream-to-iceberg");
+    }
+
+    static DataStream<Row> sourceRows(StreamExecutionEnvironment env, KinesisStreamsSource<String> source) {
+        return env.fromSource(source, WatermarkStrategy.noWatermarks(), "kinesis-events", Types.STRING).uid("kinesis-events-v1")
             .map(ClickstreamJob::parse)
             .returns(rowType())
             .name("validate-event").uid("validate-event-v1");
-        attachSink(rows, tableLoader);
-        env.execute("clickstream-to-iceberg");
     }
 }

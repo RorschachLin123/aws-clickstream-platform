@@ -19,6 +19,17 @@ import org.apache.iceberg.flink.TableLoader;
 import org.apache.iceberg.hadoop.HadoopTables;
 
 class ClickstreamJobTest {
+    @Test void kinesisSourceGraphHasExplicitOutputType() {
+        org.apache.flink.configuration.Configuration config = new org.apache.flink.configuration.Configuration();
+        config.setString("aws.region", "us-west-2");
+        org.apache.flink.connector.kinesis.source.KinesisStreamsSource<String> source =
+            org.apache.flink.connector.kinesis.source.KinesisStreamsSource.<String>builder()
+                .setStreamArn("arn:aws:kinesis:us-west-2:123456789012:stream/test")
+                .setSourceConfig(config)
+                .setDeserializationSchema(new org.apache.flink.api.common.serialization.SimpleStringSchema()).build();
+        assertEquals(ClickstreamJob.rowType(), ClickstreamJob.sourceRows(StreamExecutionEnvironment.getExecutionEnvironment(), source).getType());
+    }
+
     @Test void initializesAwsCatalogDependenciesWithoutNetwork() {
         org.apache.iceberg.aws.AwsClientFactory factory = org.apache.iceberg.aws.AwsClientFactories.from(
             java.util.Map.of("client.region", "us-west-2"));

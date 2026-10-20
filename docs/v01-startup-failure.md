@@ -7,3 +7,5 @@ The dependency list included Glue, S3 and STS but omitted KMS and DynamoDB class
 Terraform replaced only the content-addressed JAR and updated the same stopped application in place. The original startup error is preserved in local execution evidence. Cloud verification and cleanup are recorded separately in `v01-acceptance.md`.
 
 Reference: [Iceberg 1.10.0 default AWS client factory](https://github.com/apache/iceberg/blob/apache-iceberg-1.10.0/aws/src/main/java/org/apache/iceberg/aws/AwsClientFactories.java).
+
+The second startup reached Glue table initialization, then exposed missing source type information: Flink could not infer `KinesisStreamsSource<T>` after erasure. The source now passes `Types.STRING` to `fromSource`. A source-to-validation graph test reproduces that exact construction without contacting AWS. `flink-connector-base` is explicitly provided for local testing, as it is supplied by the managed runtime. All five Java tests and the rebuilt JAR pass. The application was stopped before replacement; no producer publication occurred during either failed startup.
