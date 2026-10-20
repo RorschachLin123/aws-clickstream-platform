@@ -19,6 +19,16 @@ import org.apache.iceberg.flink.TableLoader;
 import org.apache.iceberg.hadoop.HadoopTables;
 
 class ClickstreamJobTest {
+    @Test void initializesAwsCatalogDependenciesWithoutNetwork() {
+        org.apache.iceberg.aws.AwsClientFactory factory = org.apache.iceberg.aws.AwsClientFactories.from(
+            java.util.Map.of("client.region", "us-west-2"));
+        try (software.amazon.awssdk.services.glue.GlueClient glue = factory.glue();
+             software.amazon.awssdk.services.s3.S3Client s3 = factory.s3()) {
+            assertNotNull(glue);
+            assertNotNull(s3);
+        }
+    }
+
     private static final String EVENT = "{\"event_id\":\"97f57c18-d5a6-5f83-9034-8ac66c68d305\",\"run_id\":\"run-1\",\"impression_id\":\"97f57c18-d5a6-5f83-9034-8ac66c68d305\",\"user_id\":\"user-1\",\"app_id\":\"app-1\",\"campaign_id\":\"campaign-1\",\"event_type\":\"payment\",\"event_time\":\"2026-01-01T00:00:00.000Z\",\"amount_cents\":199}";
 
     @Test void preservesBusinessKeyAndMoney() throws Exception {
