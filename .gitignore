@@ -16,3 +16,7 @@ crash.*.log
 !.env.example
 .DS_Store
 __pycache__/
+.venv/
+*.egg-info/
+flink/target/
+demo-output/

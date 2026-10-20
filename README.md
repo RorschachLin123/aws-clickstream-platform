@@ -2,7 +2,7 @@
 
 A reproducible AWS portfolio project for application distribution and ad attribution events: `impression → click → install → activation/payment`.
 
-**Status:** v0.0.1 infrastructure deployed and destroyed successfully on AWS. Kinesis encrypted-stream creation, producer write/deny/recovery, PR checks and the main-branch OIDC plan are verified. Public release and fresh-checkout runbook review remain pending. There is no running producer, Flink job or Iceberg table yet. See [acceptance](docs/acceptance.md) for evidence, and [PROJECT.md](PROJECT.md) for the full staged scope.
+**Status:** the AWS data path is verified: 1,030 manifest rows = 1,030 Athena rows/unique keys, with no missing, duplicate or unexpected rows and all nine fields equal. A data-bearing Iceberg checkpoint is preserved. Compute, stream, lake and workgroup are deleted; one empty Scheduler group awaits administrator cleanup. See [acceptance evidence](docs/v01-acceptance.md), [demo/recovery runbook](docs/v01-demo.md), and [the earlier runtime incident](docs/v01-runtime-incident.md). Public release remains pending.
 
 ```mermaid
 flowchart LR
@@ -13,12 +13,12 @@ flowchart LR
     C[CloudWatch logs · 3 days]
     B[Account budget · alerts + deny producer input]
   end
-  subgraph Planned[v0.1 data path · not implemented]
-    P[Python producer] -.-> K
-    K -.-> F[Managed Apache Flink]
-    F -. Iceberg .-> L
-    L -.-> A[Athena]
-    G -. Catalog .-> F
+  subgraph Pipeline[v0.1 data path · verified 1030 rows]
+    P[Python producer] --> K
+    K --> F[Managed Apache Flink]
+    F -- Iceberg --> L
+    L --> A[Athena]
+    G -- Catalog --> F
   end
   T[Terraform · manual apply] --> Skeleton
   CI[GitHub Actions · main OIDC read-only plan] --> T
@@ -59,7 +59,7 @@ Bootstrap uses local state; back up `infra/bootstrap/terraform.tfstate` securely
 ## Engineering decisions
 
 - **Kinesis over MSK:** the small, intermittent demo prioritizes managed ingestion without operating a Kafka cluster. Kinesis on-demand still incurs provisioned service costs while idle; enable only for a timed demo. PROJECT.md's hourly comparisons are estimates, not current quotes. Check [Kinesis pricing](https://aws.amazon.com/kinesis/data-streams/pricing/) and [MSK pricing](https://aws.amazon.com/msk/pricing/) for the selected region/mode before deployment.
-- **Iceberg from the first working pipeline:** v0.1 will implement checkpoint-aware Flink writes with Glue catalog and Athena reconciliation. A bare S3 bucket is not an Iceberg table.
+- **Iceberg from the first working pipeline:** v0.1 implements checkpoint-aware Flink writes with Glue catalog and Athena reconciliation. A bare S3 bucket is not an Iceberg table.
 - **Main-only cloud plans:** ordinary PR OIDC tokens carry a `pull_request` subject, whereas the role trusts an exact main-branch subject. PRs run scan/fmt/validate/mock tests offline; push to main or manual dispatch on main generates the cloud plan. No automatic apply.
 - **Read-only CI:** IAM reads are scoped to project resources where supported; the only CI writes are the S3 lock object. Apply/destroy use your local operator identity. CI access must be expanded deliberately for later phases.
 - **Budget Action limits input:** 50/80/100% account-wide actual-cost alerts; at 100% the Budgets role attaches a deny-input policy to the producer role. This is neither a hard dollar cap nor automatic shutdown: bills lag, alternate identities are unaffected, and running services keep charging. Destroy after every session.
@@ -68,7 +68,7 @@ Bootstrap uses local state; back up `infra/bootstrap/terraform.tfstate` securely
 
 Private encrypted data/state buckets deny insecure transport. State has versioning and no automatic deletion. OIDC trusts the exact repository/main subject and AWS STS audience; new GitHub repositories may include immutable IDs. Secret scanning covers history in CI. Local configuration and state are ignored. Never upload binary plan/state files; readable plan artifacts still contain metadata (including email) and expire after three days.
 
-Lake prefixes `raw/` and `curated/` expire after seven days; logs after three. **Before Iceberg is enabled, replace generic curated expiration with Iceberg-aware snapshot/file maintenance** so active tables are not corrupted. The budget is account-wide and can trigger from other projects; use a dedicated demo account where possible. Billing cost-allocation tags require account-side activation.
+Only `raw/` and `query-results/` expire after seven days; logs after three. Iceberg data and metadata under `iceberg/` have no generic S3 expiration. This short-lived demo purges them only after Flink is stopped; long-lived tables need Iceberg-aware snapshot/orphan maintenance. The budget is account-wide and can trigger from other projects; use a dedicated demo account where possible. Billing cost-allocation tags require account-side activation.
 
 ## Roadmap and release evidence
 

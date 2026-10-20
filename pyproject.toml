@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=75,<81"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aws-clickstream-demo"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = ["boto3==1.40.61"]
+
+[project.scripts]
+clickstream = "clickstream.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
